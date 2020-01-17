@@ -8,5 +8,9 @@ file_names <- c(
 )
 
 for (file_name in file_names) {
+  "reading data: %s" %>% 
+    sprintf(file_name) %>% 
+    message()
+  
   readData(file_name = file_name)
 }
