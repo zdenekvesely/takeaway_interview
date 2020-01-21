@@ -1,0 +1,111 @@
+---
+title: "Helpfulness Movies"
+author: "zdenek.vesely@gmail.com"
+date: "1/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r data, include=FALSE}
+library(tidyverse)
+library(readr)
+library(lubridate)
+
+review_data <- read_rds("prepared_data/reviews_Movies_and_TV_5_10000.Rds")
+
+review_data <-
+  review_data %>% 
+  mutate(helpful_positive_1 = 1 * (helpful_positive >= 3 & helpful_perc >= 0.8),
+         helpful_negative_1 = 1 * (helpful_negative >= 3 & helpful_perc <= 0.2))
+```
+
+Each review can have up-votes (= positive votes) or down-votes (= negative votes).
+
+My personal definition:
+
+ *  the review is helpful positive if it has at least 3 up-votes and there is at least 80% positive votes
+ *  the review is helpful negative (spam) if it has at least 3 down-votes and there is at least 80% negative votes
+
+## Helpfulness by stars
+
+Large percentage of the reviews has no helpful score:
+
+```{r zero_help}
+hepful_by_stars <-
+  review_data %>% 
+  group_by(stars = overall) %>% 
+  summarise(helpful_positive_n = sum(helpful_positive_1),
+            helpful_positive_perc = mean(helpful_positive_1),
+            helpful_negative_n = sum(helpful_negative_1),
+            helpful_negative_perc = mean(helpful_negative_1),
+            n_reviews = length(overall)) 
+
+hepful_by_stars %>% 
+  knitr::kable(digits = 2)
+
+hepful_by_stars %>% 
+  gather(-1, key = "helpful", value = "perc") %>% 
+  filter(helpful %in% c("helpful_positive_perc", "helpful_negative_perc")) %>% 
+  ggplot() + 
+  geom_col(aes(y = perc, x = stars, group = helpful, fill = helpful),
+           position = "dodge") +
+  scale_y_continuous(labels = scales::percent)
+#todo: by category
+```
+
+The more positive reviews tend to be more helpful.
+
+The negative reviews tent to be down-voted.
+
+## Words (tokens)  {.tabset .tabset-fade .tabset-pills}
+
+We can tokenize the review texts and look into what kind of words are associated with positive/negative reviews or with helpful/spam reviews.
+
+```{r words}
+tokens_data <-
+  review_data %>% 
+  unnest(review_tokens) %>% 
+  group_by(review_tokens) %>% 
+  summarise(stars = mean(overall),
+            helpful_positive_1 = mean(helpful_positive_1),
+            helpful_negative_1= mean(helpful_negative_1),
+            n_obs = length(review_tokens)) %>% 
+  filter(n_obs >= 1000) %>% 
+  arrange(-helpful_positive_1) 
+
+tokens_data_rows <- nrow(tokens_data)
+```
+
+### Stars
+The most positive and most negative frequent words:
+```{r tokens_stars}
+N_ROWS = 15
+tokens_data %>% 
+  arrange(-stars) %>% 
+  slice(c(1:N_ROWS, (tokens_data_rows - N_ROWS):tokens_data_rows)) %>% 
+  knitr::kable(digits = 4)
+```
+
+### Helpful positive
+The most and least helpful frequent words:
+```{r tokens_help_pos}
+N_ROWS = 15
+tokens_data %>% 
+  arrange(-helpful_positive_1) %>% 
+  slice(c(1:N_ROWS, (tokens_data_rows - N_ROWS):tokens_data_rows)) %>% 
+  knitr::kable(digits = 4)
+```
+
+### Helpful negative
+The most and least spam related frequent words:
+```{r tokens_help_neg}
+N_ROWS = 15
+tokens_data %>% 
+  arrange(-helpful_negative_1) %>% 
+  slice(c(1:N_ROWS, (tokens_data_rows - N_ROWS):tokens_data_rows)) %>% 
+  knitr::kable(digits = 4)
+```
