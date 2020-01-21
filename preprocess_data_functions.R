@@ -89,3 +89,45 @@ readData <- function(file_name) {
               path = .,
               compress = "gz")
 }
+
+
+getSample <- function(review_data, sample_size = 20000) {
+  products_reviews <-
+    review_data %>%
+    group_by(asin) %>%
+    summarise(n_reviews = length(reviewTime))
+  
+  if (is.null(sample_size)) {
+    review_data_selected <-
+      review_data
+  } else {
+    set.seed(2020)
+    selected_asin <-
+      review_data %>%
+      pull(asin) %>%
+      unique() %>% 
+      sample(size = sample_size)
+    
+    review_data_selected <-
+      review_data %>%
+      filter(asin %in% selected_asin)
+  }
+  
+  review_data_selected <-
+    review_data_selected %>%
+    mutate(
+      helpful_negative = helpful_total - helpful_positive,
+      helpful_perc = ifelse(helpful_total == 0,
+                            NA,
+                            helpful_positive / helpful_total)
+    ) %>%
+    group_by(asin) %>%
+    mutate(
+      n_rev_per_asin = length(reviewTime),
+      time_order_per_asin = rank(reviewTime),
+      avg_overall_per_asin = mean(overall, na.rm = TRUE)
+    ) %>%
+    ungroup()
+  
+  review_data_selected
+}
