@@ -3,6 +3,8 @@ title: "Helpfulness Movies"
 author: "zdenek.vesely@gmail.com"
 date: "1/20/2020"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -102,10 +104,47 @@ tokens_data %>%
 
 ### Helpful negative
 The most and least spam related frequent words:
-```{r tokens_help_neg}
+```{r tokens_help_neg, warning=FALSE, message=FALSE}
 N_ROWS = 15
 tokens_data %>% 
   arrange(-helpful_negative_1) %>% 
   slice(c(1:N_ROWS, (tokens_data_rows - N_ROWS):tokens_data_rows)) %>% 
   knitr::kable(digits = 4)
+```
+
+## Review length {.tabset .tabset-fade .tabset-pills}
+
+### Stars
+
+```{r length_stars, warning=FALSE, message=FALSE}
+review_data %>% 
+  mutate(stars = factor(overall)) %>% 
+  ggplot(aes(x = review_words, fill = stars, group = stars)) +
+  geom_density(aes(y = ..density..), alpha = 0.4) +
+  scale_y_continuous(labels = scales::percent) +
+  xlim(0, 1000) +
+  facet_grid(~stars)
+
+```
+
+### Helpfulness positive
+
+```{r length_help_pos}
+review_data %>% 
+  mutate(helpful_positive_1 = factor(helpful_positive_1)) %>% 
+  ggplot(aes(x = review_words, fill = helpful_positive_1, group = helpful_positive_1)) +
+  geom_density(aes(y = ..density..), alpha = 0.4) +
+  scale_y_continuous(labels = scales::percent) +
+  xlim(0, 1000)
+```
+
+### Helpfulness negative
+
+```{r length_help_neg, warning=FALSE, message=FALSE}
+review_data %>% 
+  mutate(helpful_negative_1 = factor(helpful_negative_1)) %>% 
+  ggplot(aes(x = review_words, fill = helpful_negative_1, group = helpful_negative_1)) +
+  geom_density(aes(y = ..density..), alpha = 0.4) +
+  scale_y_continuous(labels = scales::percent) +
+  xlim(0, 1000)
 ```
