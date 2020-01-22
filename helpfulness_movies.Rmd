@@ -8,7 +8,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
 
@@ -17,7 +17,7 @@ library(tidyverse)
 library(readr)
 library(lubridate)
 
-review_data <- read_rds("prepared_data/reviews_Movies_and_TV_5_10000.Rds")
+review_data <- read_rds("prepared_data/reviews_enriched_movies_10000.Rds")
 
 review_data <-
   review_data %>% 
@@ -121,9 +121,7 @@ review_data %>%
   mutate(stars = factor(overall)) %>% 
   ggplot(aes(x = review_words, fill = stars, group = stars)) +
   geom_density(aes(y = ..density..), alpha = 0.4) +
-  scale_y_continuous(labels = scales::percent) +
-  xlim(0, 1000) +
-  facet_grid(~stars)
+  scale_x_log10(limits = c(1, 10000)) 
 
 ```
 
@@ -134,8 +132,7 @@ review_data %>%
   mutate(helpful_positive_1 = factor(helpful_positive_1)) %>% 
   ggplot(aes(x = review_words, fill = helpful_positive_1, group = helpful_positive_1)) +
   geom_density(aes(y = ..density..), alpha = 0.4) +
-  scale_y_continuous(labels = scales::percent) +
-  xlim(0, 1000)
+  scale_x_log10(limits = c(1, 10000))
 ```
 
 ### Helpfulness negative
@@ -145,6 +142,85 @@ review_data %>%
   mutate(helpful_negative_1 = factor(helpful_negative_1)) %>% 
   ggplot(aes(x = review_words, fill = helpful_negative_1, group = helpful_negative_1)) +
   geom_density(aes(y = ..density..), alpha = 0.4) +
-  scale_y_continuous(labels = scales::percent) +
-  xlim(0, 1000)
+  scale_x_log10(limits = c(1, 10000))
+```
+
+## Review time order {.tabset .tabset-fade .tabset-pills}
+
+We can order reviews for one products in time.
+
+Review order: order of the review of the given product (number from 1, ...)
+
+Relative review time: (Review order - 1/2) / # reviews of given products
+
+### Stars
+
+```{r time_stars}
+review_data %>% 
+   mutate(stars = factor(overall),
+         relative_review_time = (time_order_per_asin-1/2)/n_rev_per_asin) %>% 
+  ggplot(aes(x = relative_review_time, fill = stars)) +
+  geom_bar(position="fill", stat="bin", bins = 50) +
+  scale_y_continuous(labels = scales::percent)
+```
+
+
+### Positive helpful
+
+```{r time_pos}
+review_data %>% 
+   mutate(helpful_positive_1 = factor(helpful_positive_1),
+         relative_review_time = (time_order_per_asin-1/2)/n_rev_per_asin) %>% 
+  ggplot(aes(x = relative_review_time, fill = helpful_positive_1)) +
+  geom_bar(position="fill",  stat="bin", bins = 50) +
+  scale_y_continuous(labels = scales::percent)
+```
+
+### Negative helpful
+
+```{r time_negative}
+review_data %>% 
+   mutate(helpful_negative_1 = factor(helpful_negative_1),
+         relative_review_time = (time_order_per_asin-1/2)/n_rev_per_asin) %>% 
+  ggplot(aes(x = relative_review_time, fill = helpful_negative_1)) +
+  geom_bar(position="fill",  stat="bin", bins = 50) +
+  scale_y_continuous(labels = scales::percent)
+
+```
+
+
+
+## Price {.tabset .tabset-fade .tabset-pills}
+
+### Stars
+
+```{r price_stars}
+limits_x <- c(0.5, 500)
+
+review_data %>% 
+  mutate(stars = factor(overall)) %>% 
+  ggplot(aes(x = price, fill = stars)) +
+  geom_bar(position="fill",  stat="bin", bins = 50) +
+  scale_x_log10(limits = limits_x)
+```
+
+
+### Positive helpful
+
+```{r price_pos}
+review_data %>% 
+  mutate(helpful_positive_1 = factor(helpful_positive_1)) %>% 
+  ggplot(aes(x = price, fill = helpful_positive_1)) +
+  geom_bar(position="fill", stat="bin", bins = 50) +
+  scale_x_log10(limits = limits_x)
+```
+
+### Negative helpful
+
+```{r price_negative}
+review_data %>% 
+  mutate(helpful_negative_1 = factor(helpful_negative_1)) %>% 
+  ggplot(aes(x = price, fill = helpful_negative_1)) +
+  geom_bar(position="fill",  stat="bin", bins = 50) +
+  scale_x_log10(limits = limits_x)
 ```
