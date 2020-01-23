@@ -255,6 +255,8 @@ price_limits <-
   quantile(c(0.005, 0.995), na.rm = TRUE)
 
 product_data %>% 
+  filter(price >= price_limits[1],
+         price <= price_limits[2]) %>% 
   ggplot() +
   geom_histogram(aes(x = price), bins = 100, fill = "#2ab7ca") +
   coord_cartesian(xlim = price_limits) +
@@ -315,7 +317,8 @@ review_data %>%
 As expected - the more reviews, the more positive reviews. But there are saturation limits as only limited top reviews are shown on each product page.
 
 ```{r helpful_n_share}
-limits_n_rev <- product_data %>% 
+limits_n_rev <- 
+  product_data %>% 
   pull(n_rev_per_asin) %>% 
   quantile(c(0.0075, 0.9925))
 
@@ -341,7 +344,7 @@ The higher price, the lower sales are expected. Therefore the lower number of re
 ```{r n_rev_price}
 product_data %>% 
   ggplot(aes(x = price, y = n_rev_per_asin)) +
-  geom_smooth(method = "loess", se = TRUE) +
+  geom_smooth(method = "auto", se = TRUE) +
   scale_x_log10(limits = price_limits) +
   expand_limits(y = 1) +
   ylab("# reviews per product") +

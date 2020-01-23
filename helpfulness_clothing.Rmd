@@ -248,6 +248,8 @@ price_limits <-
   quantile(c(0.005, 0.995), na.rm = TRUE)
 
 product_data %>% 
+  filter(price >= price_limits[1],
+         price <= price_limits[2]) %>% 
   ggplot() +
   geom_histogram(aes(x = price), bins = 100, fill = "#2ab7ca") +
   coord_cartesian(xlim = price_limits) +
