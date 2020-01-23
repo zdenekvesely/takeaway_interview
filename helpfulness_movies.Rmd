@@ -237,7 +237,8 @@ product_data <-
             n_rev_per_asin = first(n_rev_per_asin),
             stars = first(avg_overall_per_asin),
             avg_helpful_positive_1 = mean(helpful_positive_1),
-            n_helpful_positive_1 = sum(helpful_positive_1))
+            n_helpful_positive_1 = sum(helpful_positive_1),
+            bought_together = first(bought_together))
 
 price_limits <- 
   product_data %>% 
@@ -331,4 +332,62 @@ product_data %>%
   xlab("product price")
 ```
 
+
+## Product pairs
+
+```{r product pairs}
+product_pairs <-
+  product_data %>% 
+  select(asin1 = asin, 
+         asin2 = bought_together) %>% 
+  filter(map(asin2, ~!is.null(.[[1]])) %>% as.logical()) %>% 
+  unnest(asin2)
+
+products_pairs_data <-
+  product_data %>% 
+  inner_join(product_pairs, 
+            by = c("asin" = "asin1")) %>% 
+  left_join(product_data,
+            by = c("asin2" = "asin"), 
+            suffix = c("", "_rel")
+            ) %>% 
+  group_by(asin) %>% 
+  summarise(price = first(price),
+            n_rev_per_asin = first(n_rev_per_asin),
+            stars  = first(stars),
+            avg_helpful_positive_1 = first(avg_helpful_positive_1),
+            n_helpful_positive_1 = first(n_helpful_positive_1),
+            price_rel = mean(price_rel, na.rm = TRUE),
+            n_rev_per_asin_rel = mean(n_rev_per_asin_rel, na.rm = TRUE),
+            stars_rel = mean(stars_rel, na.rm = TRUE),
+            avg_helpful_positive_1_rel = mean(avg_helpful_positive_1_rel, na.rm = TRUE),
+            n_helpful_positive_1_rel = mean(n_helpful_positive_1_rel, na.rm = TRUE))
+
+
+products_pairs_data %>% 
+  summarise(mean(is.na(price_rel)))
+
+products_pairs_data %>% 
+  summarise(mean(is.na(n_rev_per_asin)))
+
+
+products_pairs_data %>% 
+  ggplot(aes(x = stars , y = stars_rel)) +
+  geom_smooth(method = "loess", se = TRUE) +
+  expand_limits(y = 0) + 
+  xlab("average product score (stars)") +
+  ylab("related (bought together) product average score (stars)") +
+  geom_abline(slope = 1, col = "gray")
+
+products_pairs_data %>% 
+  ggplot(aes(x =  avg_helpful_positive_1, y = avg_helpful_positive_1_rel)) +
+  geom_smooth(method = "loess", se = TRUE) +
+  expand_limits(y = 0) + 
+  xlab("average reviews helpfulness") +
+  ylab("related (bought together) product average reviews helpfulness") +
+  scale_x_continuous(labels = scales::percent) + 
+  scale_y_continuous(labels = scales::percent) +
+  geom_abline(slope = 1, col = "gray")
+
+```
 
