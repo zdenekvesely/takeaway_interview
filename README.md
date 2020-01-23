@@ -189,8 +189,17 @@ The causal relationship cannot be estimated without A/B testing.
 
 I can assume that helpful positive review makes for good advertisement, especially if it posted early (and for more expensive products). We can try to find users with such reviews.
 
-At the same, the helpful low rating review can warn customers and slow down the sales, again especially at the early stages.
+At the same time, the helpful low rating review can warn customers and slow down the sales, again especially at the early stages.
 
 ## Is there a relation between reviews from products which are bought together?
 
+There is nice positive correlation between the rating and also the helpfulness share between products bought together, that is for all four categories.
+
+![Electronics rate of related products](pics/electro_rate_cor.png)
+
+![Electronics helpfulness share of related products](pics/electro_help_cor.png)
+
+
 ## Optional - Any other hypothesis you think is interesting, as long it would have business value for Amazon
+
+TODO: model for prediction of helpfulnes based on the texts - ordering the helpfull positive - meditation on ordering the helpful negative
