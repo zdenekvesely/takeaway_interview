@@ -253,7 +253,11 @@ price_limits <-
   pull(price) %>% 
   quantile(c(0.005, 0.995), na.rm = TRUE)
 
+price_limits[1] <- max(c(price_limits[1], 2))
+
 product_data %>% 
+  filter(price >= price_limits[1],
+         price <= price_limits[2]) %>% 
   ggplot() +
   geom_histogram(aes(x = price), bins = 100, fill = "#2ab7ca") +
   coord_cartesian(xlim = price_limits) +
@@ -311,7 +315,7 @@ review_data %>%
 
 ###  Number of positive reviews vs total number of reviews 
 
-As expected - the more reviews, the more positive reviews. But there are saturation limits as only limited top reviews are shown on each product page.
+As expected - the more reviews, the more positive reviews.
 
 ```{r helpful_n_share}
 limits_n_rev <- product_data %>% 
@@ -320,6 +324,7 @@ limits_n_rev <- product_data %>%
 
 product_data %>% 
   mutate(avg_stars = factor(round(stars, 0))) %>% 
+  filter(avg_stars %in% as.character(2:5)) %>% 
   ggplot(aes(x = n_rev_per_asin, y = n_helpful_positive_1,
              group = avg_stars, color = avg_stars, fill = avg_stars)) +
   geom_smooth(method = "loess", se = TRUE) +
@@ -335,13 +340,13 @@ product_data %>%
 
 ###  Reviews per product on price
 
-The higher price, the lower sales are expected. Therefore the lower number of reviews.
+It seems the number of reviews per product is not really dependent on the price.
 
 ```{r n_rev_price}
 product_data %>% 
   ggplot(aes(x = price, y = n_rev_per_asin)) +
   geom_smooth(method = "loess", se = TRUE) +
-  scale_x_log10(limits = price_limits) +
+  scale_x_continuous(limits = price_limits) +
   expand_limits(y = 1) +
   ylab("# reviews per product") +
   xlab("product price") +
