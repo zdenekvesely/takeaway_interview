@@ -1,0 +1,417 @@
+---
+title: "Helpfulness Books"
+author: "zdenek.vesely@gmail.com"
+date: "1/20/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+params:
+  data_size: "small"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r data, include=FALSE}
+library(tidyverse)
+library(readr)
+library(lubridate)
+library(kableExtra)
+
+if (params$data_size == "small") {
+  review_data <- read_rds("prepared_data/reviews_enriched_books_10000.Rds")
+  N_OBS_WORD = 1000
+} else {
+  review_data <- read_rds("prepared_data/reviews_enriched_books_100000.Rds")
+  N_OBS_WORD = 4000
+}
+
+MAIN_LABEL <- "Books"
+
+review_data <-
+  review_data %>% 
+  mutate(helpful_positive_1 = 1 * (helpful_positive >= 3 & helpful_perc >= 0.8),
+         helpful_negative_1 = 1 * (helpful_negative >= 3 & helpful_perc <= 0.2))
+```
+
+Each review can have up-votes (= positive votes) or down-votes (= negative votes).
+
+My personal definition:
+
+ *  the review is helpful positive if it has at least 3 up-votes and there is at least 80% positive votes
+ *  the review is helpful negative (spam) if it has at least 3 down-votes and there is at least 80% negative votes
+
+## Helpfulness by stars
+
+Large percentage of the reviews has no helpful score:
+
+```{r zero_help}
+hepful_by_stars <-
+  review_data %>% 
+  group_by(stars = overall) %>% 
+  summarise(helpful_positive_n = sum(helpful_positive_1),
+            helpful_positive_perc = mean(helpful_positive_1),
+            helpful_negative_n = sum(helpful_negative_1),
+            helpful_negative_perc = mean(helpful_negative_1),
+            n_reviews = length(overall)) 
+
+hepful_by_stars %>% 
+  kable(digits = 2) %>% 
+  kable_styling(c("striped", "bordered"))
+
+hepful_by_stars %>% 
+  gather(-1, key = "helpful", value = "perc") %>% 
+  filter(helpful %in% c("helpful_positive_perc", "helpful_negative_perc")) %>% 
+  ggplot() + 
+  geom_col(aes(y = perc, x = stars, group = helpful, fill = helpful),
+           position = "dodge") +
+  scale_y_continuous(labels = scales::percent) +
+  ylab("share of helpful reviews") +
+  ggtitle(MAIN_LABEL)
+#todo: by category
+```
+
+
+## Words (tokens)  {.tabset .tabset-fade .tabset-pills}
+
+We can tokenize the review texts and look into what kind of words are associated with positive/negative reviews or with helpful/spam reviews.
+
+```{r words}
+tokens_data <-
+  review_data %>% 
+  select(review_tokens, overall, helpful_positive_1, helpful_negative_1) %>% 
+  unnest(review_tokens) %>% 
+  group_by(review_tokens) %>% 
+  summarise(stars = mean(overall),
+            helpful_positive_1 = mean(helpful_positive_1),
+            helpful_negative_1= mean(helpful_negative_1),
+            n_obs = length(review_tokens)) %>% 
+  filter(n_obs >= N_OBS_WORD) 
+
+tokens_data_rows <- nrow(tokens_data)
+```
+
+### Stars
+The most positive and most negative frequent words:
+```{r tokens_stars}
+N_ROWS = 15
+tokens_data %>% 
+  arrange(-stars) %>% 
+  slice(c(1:N_ROWS, (tokens_data_rows - N_ROWS + 1):tokens_data_rows)) %>% 
+  kable(digits = 4) %>% 
+  kable_styling("striped", full_width = F) %>%
+  row_spec((N_ROWS + 1):(2*N_ROWS), color = "white", background = "#D7261E")
+```
+
+### Helpful positive
+The most and least helpful frequent words:
+```{r tokens_help_pos}
+N_ROWS = 15
+tokens_data %>% 
+  arrange(-helpful_positive_1)  %>% 
+  slice(c(1:N_ROWS, (tokens_data_rows - N_ROWS + 1):tokens_data_rows)) %>% 
+  kable(digits = 4) %>% 
+  kable_styling("striped", full_width = F) %>%
+  row_spec((N_ROWS + 1):(2*N_ROWS), color = "white", background = "#D7261E")
+```
+
+### Helpful negative
+The most and least spam related frequent words:
+```{r tokens_help_neg, warning=FALSE, message=FALSE}
+N_ROWS = 15
+tokens_data %>% 
+  arrange(-helpful_negative_1)  %>% 
+  slice(c(1:N_ROWS, (tokens_data_rows - N_ROWS + 1):tokens_data_rows)) %>% 
+  kable(digits = 4) %>% 
+  kable_styling("striped", full_width = F) %>%
+  row_spec((N_ROWS + 1):(2*N_ROWS), color = "white", background = "#D7261E")
+```
+
+```{r free_memory}
+rm("tokens_data")
+```
+
+
+## Review length {.tabset .tabset-fade .tabset-pills}
+
+Distribution of the review length.
+
+### Stars
+
+```{r length_stars, warning=FALSE, message=FALSE}
+review_data %>% 
+  mutate(stars = factor(overall)) %>% 
+  ggplot(aes(x = review_words, fill = stars, group = stars)) +
+  geom_density(aes(y = ..density..), alpha = 0.4) +
+  scale_x_log10(limits = c(1, 10000)) +
+  ylab("density") +
+  xlab("# words per review") +
+  ggtitle(MAIN_LABEL)
+
+```
+
+### Helpfulness positive
+
+```{r length_help_pos}
+review_data %>% 
+  mutate(helpful_positive_1 = factor(helpful_positive_1)) %>% 
+  ggplot(aes(x = review_words, fill = helpful_positive_1, group = helpful_positive_1)) +
+  geom_density(aes(y = ..density..), alpha = 0.4) +
+  scale_x_log10(limits = c(1, 10000)) +
+  ylab("density") +
+  xlab("# words per review") +
+  ggtitle(MAIN_LABEL)
+```
+
+### Helpfulness negative
+
+```{r length_help_neg, warning=FALSE, message=FALSE}
+review_data %>% 
+  mutate(helpful_negative_1 = factor(helpful_negative_1)) %>% 
+  ggplot(aes(x = review_words, fill = helpful_negative_1, group = helpful_negative_1)) +
+  geom_density(aes(y = ..density..), alpha = 0.4) +
+  scale_x_log10(limits = c(1, 10000)) +
+  ylab("density") +
+  xlab("# words per review") +
+  ggtitle(MAIN_LABEL)
+```
+
+## Review time order {.tabset .tabset-fade .tabset-pills}
+
+We can order reviews for one products in time.
+
+Review order: order of the review of the given product (number from 1, ...)
+
+Relative review time: $\frac{\text{Review order} - 1/2}{\# \text{reviews of given products}}$
+
+
+### Stars
+
+```{r time_stars}
+review_data %>% 
+   mutate(stars = factor(overall),
+         relative_review_time = (time_order_per_asin-1/2)/n_rev_per_asin) %>% 
+  ggplot(aes(x = relative_review_time, fill = stars)) +
+  geom_bar(position="fill", stat="bin", bins = 50) +
+  scale_y_continuous(labels = scales::percent) +
+  ylab("share") +
+  xlab("relative review time") +
+  ggtitle(MAIN_LABEL)
+```
+
+
+### Positive helpful
+
+```{r time_pos}
+review_data %>% 
+   mutate(helpful_positive_1 = factor(helpful_positive_1),
+         relative_review_time = (time_order_per_asin-1/2)/n_rev_per_asin) %>% 
+  ggplot(aes(x = relative_review_time, fill = helpful_positive_1)) +
+  geom_bar(position="fill",  stat="bin", bins = 50) +
+  scale_y_continuous(labels = scales::percent) +
+  coord_cartesian(ylim = c(0, 0.5)) +
+  ylab("share") +
+  xlab("relative review time") +
+  ggtitle(MAIN_LABEL)
+```
+
+### Negative helpful
+
+```{r time_negative}
+review_data %>% 
+   mutate(helpful_negative_1 = factor(helpful_negative_1),
+         relative_review_time = (time_order_per_asin-1/2)/n_rev_per_asin) %>% 
+  ggplot(aes(x = relative_review_time, fill = helpful_negative_1)) +
+  geom_bar(position="fill",  stat="bin", bins = 50) +
+  scale_y_continuous(labels = scales::percent) +
+  coord_cartesian(ylim = c(0, 0.08)) +
+  ylab("share") +
+  xlab("relative review time") +
+  ggtitle(MAIN_LABEL)
+```
+
+
+
+## Price {.tabset .tabset-fade .tabset-pills}
+
+The product prices distribution:
+
+```{r hist_price}
+product_data <-
+  review_data %>% 
+  group_by(asin) %>% 
+  summarise(price = first(price),
+            n_rev_per_asin = first(n_rev_per_asin),
+            stars = first(avg_overall_per_asin),
+            avg_helpful_positive_1 = mean(helpful_positive_1),
+            n_helpful_positive_1 = sum(helpful_positive_1),
+            bought_together = first(bought_together))
+
+price_limits <- 
+  product_data %>% 
+  pull(price) %>% 
+  quantile(c(0.005, 0.995), na.rm = TRUE)
+
+price_limits[1] <- max(c(price_limits[1], 2))
+
+product_data %>% 
+  filter(price >= price_limits[1],
+         price <= price_limits[2]) %>% 
+  ggplot() +
+  geom_histogram(aes(x = price), bins = 100, fill = "#2ab7ca") +
+  coord_cartesian(xlim = price_limits) +
+  ylab("# products") + 
+  xlab("product price") +
+  ggtitle(MAIN_LABEL)
+```
+
+
+### Stars
+
+```{r price_stars}
+review_data %>% 
+  mutate(stars = factor(overall)) %>% 
+  ggplot(aes(x = price, fill = stars)) +
+  geom_bar(position="fill",  stat="bin", bins = 50) +
+  scale_x_log10(limits = price_limits) +
+  ylab("share") +
+  xlab("product price") +
+  ggtitle(MAIN_LABEL)
+  
+```
+
+
+### Positive helpful
+
+```{r price_pos}
+review_data %>% 
+  mutate(helpful_positive_1 = factor(helpful_positive_1)) %>% 
+  ggplot(aes(x = price, fill = helpful_positive_1)) +
+  geom_bar(position="fill", stat="bin", bins = 50) +
+  scale_x_log10(limits = price_limits) +
+  scale_y_continuous(labels = scales::percent) +
+  coord_cartesian(ylim = c(0, 0.5)) +
+  ggtitle(MAIN_LABEL)
+```
+
+### Negative helpful
+
+```{r price_negative}
+review_data %>% 
+  mutate(helpful_negative_1 = factor(helpful_negative_1)) %>% 
+  ggplot(aes(x = price, fill = helpful_negative_1)) +
+  geom_bar(position="fill",  stat="bin", bins = 50) +
+  scale_x_log10(limits = price_limits) +
+  scale_y_continuous(labels = scales::percent) +
+  coord_cartesian(ylim = c(0, 0.10)) +
+  ylab("share") +
+  xlab("product price") +
+  ggtitle(MAIN_LABEL)
+```
+
+
+## Per products view {.tabset .tabset-fade .tabset-pills}
+
+###  Number of positive reviews vs total number of reviews 
+
+As expected - the more reviews, the more positive reviews.
+
+```{r helpful_n_share}
+limits_n_rev <- product_data %>% 
+  pull(n_rev_per_asin) %>% 
+  quantile(c(0.0075, 0.9925))
+
+product_data %>% 
+  mutate(avg_stars = factor(round(stars, 0))) %>% 
+  ggplot(aes(x = n_rev_per_asin, y = n_helpful_positive_1,
+             group = avg_stars, color = avg_stars, fill = avg_stars)) +
+  geom_smooth(method = "auto", se = TRUE) +
+  scale_x_continuous(limits = limits_n_rev) +
+  #scale_x_log10(limits = limits_n_rev) +
+  xlab("# reviews per product") + 
+  ylab("# helpful reviews per product") + 
+  labs(fill = "Average stars") +
+  guides(colour = FALSE) +
+  ggtitle(MAIN_LABEL)
+```
+
+
+###  Reviews per product on price
+
+The higher price, the lower sales are expected. Therefore the lower number of reviews.
+
+```{r n_rev_price}
+product_data %>% 
+  ggplot(aes(x = price, y = n_rev_per_asin)) +
+  geom_smooth(method = "auto", se = TRUE) +
+  scale_x_log10(limits = price_limits) +
+  expand_limits(y = 1) +
+  ylab("# reviews per product") +
+  xlab("product price") +
+  ggtitle(MAIN_LABEL)
+```
+
+
+## Product pairs
+
+Attribute "bought_together" in the products metadata shows which products are often bought together (in one basket) with the given product.
+For each product having this attribute we can calculate average price, review score (stars) and review helpfulness of the related products.
+
+```{r product_pairs}
+product_pairs <-
+  product_data %>% 
+  select(asin1 = asin, 
+         asin2 = bought_together) %>% 
+  filter(map(asin2, ~!is.null(.[[1]])) %>% as.logical()) %>% 
+  unnest(asin2)
+
+products_pairs_data <-
+  product_data %>% 
+  inner_join(product_pairs, 
+            by = c("asin" = "asin1")) %>% 
+  left_join(product_data,
+            by = c("asin2" = "asin"), 
+            suffix = c("", "_rel")
+            ) %>% 
+  group_by(asin) %>% 
+  summarise(price = first(price),
+            n_rev_per_asin = first(n_rev_per_asin),
+            stars  = first(stars),
+            avg_helpful_positive_1 = first(avg_helpful_positive_1),
+            n_helpful_positive_1 = first(n_helpful_positive_1),
+            price_rel = mean(price_rel, na.rm = TRUE),
+            n_rev_per_asin_rel = mean(n_rev_per_asin_rel, na.rm = TRUE),
+            stars_rel = mean(stars_rel, na.rm = TRUE),
+            avg_helpful_positive_1_rel = mean(avg_helpful_positive_1_rel, na.rm = TRUE),
+            n_helpful_positive_1_rel = mean(n_helpful_positive_1_rel, na.rm = TRUE))
+
+# 
+# products_pairs_data %>% 
+#   summarise(mean(is.na(price_rel)))
+# 
+# products_pairs_data %>% 
+#   summarise(mean(is.na(n_rev_per_asin)))
+
+
+products_pairs_data %>% 
+  ggplot(aes(x = stars , y = stars_rel)) +
+  geom_smooth(method = "loess", se = TRUE) +
+  expand_limits(y = 0) + 
+  xlab("average product score (stars)") +
+  ylab("related (bought together) product average score (stars)") +
+  geom_abline(slope = 1, col = "gray") +
+  ggtitle(MAIN_LABEL)
+
+products_pairs_data %>% 
+  ggplot(aes(x =  avg_helpful_positive_1, y = avg_helpful_positive_1_rel)) +
+  geom_smooth(method = "loess", se = TRUE) +
+  expand_limits(y = 0) + 
+  xlab("average reviews helpfulness") +
+  ylab("related (bought together) product average reviews helpfulness") +
+  scale_x_continuous(labels = scales::percent) + 
+  scale_y_continuous(labels = scales::percent) +
+  geom_abline(slope = 1, col = "gray") +
+  ggtitle(MAIN_LABEL)
+
+```
