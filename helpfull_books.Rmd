@@ -22,8 +22,10 @@ library(kableExtra)
 
 if (params$data_size == "small") {
   review_data <- read_rds("prepared_data/reviews_enriched_books_10000.Rds")
+  N_OBS_WORLD = 1000
 } else {
   review_data <- read_rds("prepared_data/reviews_enriched_books_100000.Rds")
+  N_OBS_WORLD = 4000
 }
 
 review_data <-
@@ -83,7 +85,7 @@ tokens_data <-
             helpful_positive_1 = mean(helpful_positive_1),
             helpful_negative_1= mean(helpful_negative_1),
             n_obs = length(review_tokens)) %>% 
-  filter(n_obs >= 1000) %>% 
+  filter(n_obs >= N_OBS_WORLD) %>% 
   arrange(-helpful_positive_1) 
 
 tokens_data_rows <- nrow(tokens_data)
@@ -123,6 +125,10 @@ tokens_data %>%
   kable(digits = 4) %>% 
   kable_styling("striped", full_width = F) %>%
   row_spec((N_ROWS + 1):(2*N_ROWS), color = "white", background = "#D7261E")
+```
+
+```{r free_memory}
+rm("tokens_data")
 ```
 
 ## Review length {.tabset .tabset-fade .tabset-pills}
@@ -241,3 +247,8 @@ review_data %>%
   scale_x_log10(limits = limits_x) +
   coord_cartesian(ylim = c(0, 0.03))
 ```
+
+```{r free_memory_2}
+rm("review_data")
+```
+

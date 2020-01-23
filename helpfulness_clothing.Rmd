@@ -72,6 +72,7 @@ We can tokenize the review texts and look into what kind of words are associated
 ```{r words}
 tokens_data <-
   review_data %>% 
+  select(review_tokens, overall, helpful_positive_1, helpful_negative_1) %>% 
   unnest(review_tokens) %>% 
   group_by(review_tokens) %>% 
   summarise(stars = mean(overall),

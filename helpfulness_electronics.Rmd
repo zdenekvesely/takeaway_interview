@@ -22,8 +22,10 @@ library(kableExtra)
 
 if (params$data_size == "small") {
   review_data <- read_rds("prepared_data/reviews_enriched_electronics_10000.Rds")
+  N_OBS_WORLD = 1000
 } else {
   review_data <- read_rds("prepared_data/reviews_enriched_electronics_all.Rds")
+  N_OBS_WORLD = 4000
 }
 
 
@@ -78,14 +80,14 @@ We can tokenize the review texts and look into what kind of words are associated
 ```{r words}
 tokens_data <-
   review_data %>% 
+  select(review_tokens, overall, helpful_positive_1, helpful_negative_1) %>% 
   unnest(review_tokens) %>% 
   group_by(review_tokens) %>% 
   summarise(stars = mean(overall),
             helpful_positive_1 = mean(helpful_positive_1),
             helpful_negative_1= mean(helpful_negative_1),
             n_obs = length(review_tokens)) %>% 
-  filter(n_obs >= 1000) %>% 
-  arrange(-helpful_positive_1) 
+  filter(n_obs >= N_OBS_WORLD) 
 
 tokens_data_rows <- nrow(tokens_data)
 ```
