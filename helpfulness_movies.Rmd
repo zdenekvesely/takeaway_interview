@@ -28,6 +28,7 @@ if (params$data_size == "small") {
   N_OBS_WORD = 4000
 }
 
+MAIN_LABEL <- "Movies and TV"
 
 review_data <-
   review_data %>% 
@@ -57,7 +58,8 @@ hepful_by_stars <-
             n_reviews = length(overall)) 
 
 hepful_by_stars %>% 
-  kable(digits = 2)
+  kable(digits = 2) %>% 
+  kable_styling(c("striped", "bordered"))
 
 hepful_by_stars %>% 
   gather(-1, key = "helpful", value = "perc") %>% 
@@ -66,13 +68,11 @@ hepful_by_stars %>%
   geom_col(aes(y = perc, x = stars, group = helpful, fill = helpful),
            position = "dodge") +
   scale_y_continuous(labels = scales::percent) +
-  ylab("share of helpful reviews")
+  ylab("share of helpful reviews") +
+  ggtitle(MAIN_LABEL)
 #todo: by category
 ```
 
-The more positive reviews tend to be more helpful.
-
-The negative reviews tent to be down-voted.
 
 ## Words (tokens)  {.tabset .tabset-fade .tabset-pills}
 
@@ -136,6 +136,8 @@ rm("tokens_data")
 
 ## Review length {.tabset .tabset-fade .tabset-pills}
 
+Distribution of the review length.
+
 ### Stars
 
 ```{r length_stars, warning=FALSE, message=FALSE}
@@ -145,7 +147,8 @@ review_data %>%
   geom_density(aes(y = ..density..), alpha = 0.4) +
   scale_x_log10(limits = c(1, 10000)) +
   ylab("density") +
-  xlab("# words per review")
+  xlab("# words per review") +
+  ggtitle(MAIN_LABEL)
 
 ```
 
@@ -158,7 +161,8 @@ review_data %>%
   geom_density(aes(y = ..density..), alpha = 0.4) +
   scale_x_log10(limits = c(1, 10000)) +
   ylab("density") +
-  xlab("# words per review")
+  xlab("# words per review") +
+  ggtitle(MAIN_LABEL)
 ```
 
 ### Helpfulness negative
@@ -170,7 +174,8 @@ review_data %>%
   geom_density(aes(y = ..density..), alpha = 0.4) +
   scale_x_log10(limits = c(1, 10000)) +
   ylab("density") +
-  xlab("# words per review")
+  xlab("# words per review") +
+  ggtitle(MAIN_LABEL)
 ```
 
 ## Review time order {.tabset .tabset-fade .tabset-pills}
@@ -179,7 +184,8 @@ We can order reviews for one products in time.
 
 Review order: order of the review of the given product (number from 1, ...)
 
-Relative review time: (Review order - 1/2) / # reviews of given products
+Relative review time: $\frac{\text{Review order} - 1/2}{\# \text{reviews of given products}}$
+
 
 ### Stars
 
@@ -191,7 +197,8 @@ review_data %>%
   geom_bar(position="fill", stat="bin", bins = 50) +
   scale_y_continuous(labels = scales::percent) +
   ylab("share") +
-  xlab("relative review time")
+  xlab("relative review time") +
+  ggtitle(MAIN_LABEL)
 ```
 
 
@@ -206,7 +213,8 @@ review_data %>%
   scale_y_continuous(labels = scales::percent) +
   coord_cartesian(ylim = c(0, 0.5)) +
   ylab("share") +
-  xlab("relative review time")
+  xlab("relative review time") +
+  ggtitle(MAIN_LABEL)
 ```
 
 ### Negative helpful
@@ -220,7 +228,8 @@ review_data %>%
   scale_y_continuous(labels = scales::percent) +
   coord_cartesian(ylim = c(0, 0.08)) +
   ylab("share") +
-  xlab("relative review time")
+  xlab("relative review time") +
+  ggtitle(MAIN_LABEL)
 ```
 
 
@@ -250,7 +259,8 @@ product_data %>%
   geom_histogram(aes(x = price), bins = 100, fill = "#2ab7ca") +
   coord_cartesian(xlim = price_limits) +
   ylab("# products") + 
-  xlab("product price")
+  xlab("product price") +
+  ggtitle(MAIN_LABEL)
 ```
 
 
@@ -263,7 +273,8 @@ review_data %>%
   geom_bar(position="fill",  stat="bin", bins = 50) +
   scale_x_log10(limits = price_limits) +
   ylab("share") +
-  xlab("product price")
+  xlab("product price") +
+  ggtitle(MAIN_LABEL)
   
 ```
 
@@ -277,7 +288,8 @@ review_data %>%
   geom_bar(position="fill", stat="bin", bins = 50) +
   scale_x_log10(limits = price_limits) +
   scale_y_continuous(labels = scales::percent) +
-  coord_cartesian(ylim = c(0, 0.5))
+  coord_cartesian(ylim = c(0, 0.5)) +
+  ggtitle(MAIN_LABEL)
 ```
 
 ### Negative helpful
@@ -291,13 +303,16 @@ review_data %>%
   scale_y_continuous(labels = scales::percent) +
   coord_cartesian(ylim = c(0, 0.10)) +
   ylab("share") +
-  xlab("product price")
+  xlab("product price") +
+  ggtitle(MAIN_LABEL)
 ```
 
 
 ## Per products view {.tabset .tabset-fade .tabset-pills}
 
-###  Share of positive reviews vs number of reviews 
+###  Number of positive reviews vs total number of reviews 
+
+As expected - the more reviews, the more positive reviews. But there are saturation limits as only limited top reviews are shown on each product page.
 
 ```{r helpful_n_share}
 limits_n_rev <- product_data %>% 
@@ -313,14 +328,15 @@ product_data %>%
   #scale_x_log10(limits = limits_n_rev) +
   xlab("# reviews per product") + 
   ylab("# helpful reviews per product") + 
-  labs(fill = "Dose (mg)") +
-  guides(colour = FALSE)
+  labs(fill = "Average stars") +
+  guides(colour = FALSE) +
+  ggtitle(MAIN_LABEL)
 ```
 
 
 ###  Reviews per product on price
 
-Number of stars vs product price
+The higher price, the lower sales are expected. Therefore the lower number of reviews.
 
 ```{r n_rev_price}
 product_data %>% 
@@ -329,13 +345,17 @@ product_data %>%
   scale_x_log10(limits = price_limits) +
   expand_limits(y = 1) +
   ylab("# reviews per product") +
-  xlab("product price")
+  xlab("product price") +
+  ggtitle(MAIN_LABEL)
 ```
 
 
 ## Product pairs
 
-```{r product pairs}
+Attribute "bought_together" in the products metadata shows which products are often bought together (in one basket) with the given product.
+For each product having this attribute we can calculate average price, review score (stars) and review helpfulness of the related products.
+
+```{r product_pairs}
 product_pairs <-
   product_data %>% 
   select(asin1 = asin, 
@@ -363,12 +383,12 @@ products_pairs_data <-
             avg_helpful_positive_1_rel = mean(avg_helpful_positive_1_rel, na.rm = TRUE),
             n_helpful_positive_1_rel = mean(n_helpful_positive_1_rel, na.rm = TRUE))
 
-
-products_pairs_data %>% 
-  summarise(mean(is.na(price_rel)))
-
-products_pairs_data %>% 
-  summarise(mean(is.na(n_rev_per_asin)))
+# 
+# products_pairs_data %>% 
+#   summarise(mean(is.na(price_rel)))
+# 
+# products_pairs_data %>% 
+#   summarise(mean(is.na(n_rev_per_asin)))
 
 
 products_pairs_data %>% 
@@ -377,7 +397,8 @@ products_pairs_data %>%
   expand_limits(y = 0) + 
   xlab("average product score (stars)") +
   ylab("related (bought together) product average score (stars)") +
-  geom_abline(slope = 1, col = "gray")
+  geom_abline(slope = 1, col = "gray") +
+  ggtitle(MAIN_LABEL)
 
 products_pairs_data %>% 
   ggplot(aes(x =  avg_helpful_positive_1, y = avg_helpful_positive_1_rel)) +
@@ -387,7 +408,8 @@ products_pairs_data %>%
   ylab("related (bought together) product average reviews helpfulness") +
   scale_x_continuous(labels = scales::percent) + 
   scale_y_continuous(labels = scales::percent) +
-  geom_abline(slope = 1, col = "gray")
+  geom_abline(slope = 1, col = "gray") +
+  ggtitle(MAIN_LABEL)
 
 ```
 
