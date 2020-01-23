@@ -266,7 +266,7 @@ review_data %>%
   mutate(stars = factor(overall)) %>% 
   ggplot(aes(x = price, fill = stars)) +
   geom_bar(position="fill",  stat="bin", bins = 50) +
-  scale_x_log10(limits = price_limits) +
+  scale_x_continuous(limits = price_limits) +
   ylab("share") +
   xlab("product price") +
   ggtitle(MAIN_LABEL)
@@ -281,7 +281,7 @@ review_data %>%
   mutate(helpful_positive_1 = factor(helpful_positive_1)) %>% 
   ggplot(aes(x = price, fill = helpful_positive_1)) +
   geom_bar(position="fill", stat="bin", bins = 50) +
-  scale_x_log10(limits = price_limits) +
+  scale_x_continuous(limits = price_limits) +
   scale_y_continuous(labels = scales::percent) +
   coord_cartesian(ylim = c(0, 0.5)) +
   ggtitle(MAIN_LABEL)
@@ -294,7 +294,7 @@ review_data %>%
   mutate(helpful_negative_1 = factor(helpful_negative_1)) %>% 
   ggplot(aes(x = price, fill = helpful_negative_1)) +
   geom_bar(position="fill",  stat="bin", bins = 50) +
-  scale_x_log10(limits = price_limits) +
+  scale_x_continuous(limits = price_limits) +
   scale_y_continuous(labels = scales::percent) +
   coord_cartesian(ylim = c(0, 0.10)) +
   ylab("share") +
@@ -337,7 +337,7 @@ The higher price, the lower sales are expected. Therefore the lower number of re
 product_data %>% 
   ggplot(aes(x = price, y = n_rev_per_asin)) +
   geom_smooth(method = "loess", se = TRUE) +
-  scale_x_log10(limits = price_limits) +
+  scale_x_continuous(limits = price_limits) +
   expand_limits(y = 1) +
   ylab("# reviews per product") +
   xlab("product price") +
