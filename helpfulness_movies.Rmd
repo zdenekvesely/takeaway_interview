@@ -22,10 +22,10 @@ library(kableExtra)
 
 if (params$data_size == "small") {
   review_data <- read_rds("prepared_data/reviews_enriched_movies_10000.Rds")
-  N_OBS_WORLD = 1000
+  N_OBS_WORD = 1000
 } else {
   review_data <- read_rds("prepared_data/reviews_enriched_movies_all.Rds")
-  N_OBS_WORLD = 4000
+  N_OBS_WORD = 4000
 }
 
 
@@ -57,7 +57,7 @@ hepful_by_stars <-
             n_reviews = length(overall)) 
 
 hepful_by_stars %>% 
-  knitr::kable(digits = 2)
+  kable(digits = 2)
 
 hepful_by_stars %>% 
   gather(-1, key = "helpful", value = "perc") %>% 
@@ -65,7 +65,8 @@ hepful_by_stars %>%
   ggplot() + 
   geom_col(aes(y = perc, x = stars, group = helpful, fill = helpful),
            position = "dodge") +
-  scale_y_continuous(labels = scales::percent)
+  scale_y_continuous(labels = scales::percent) +
+  ylab("share of helpful reviews")
 #todo: by category
 ```
 
@@ -87,7 +88,7 @@ tokens_data <-
             helpful_positive_1 = mean(helpful_positive_1),
             helpful_negative_1= mean(helpful_negative_1),
             n_obs = length(review_tokens)) %>% 
-  filter(n_obs >= N_OBS_WORLD) 
+  filter(n_obs >= N_OBS_WORD) 
 
 tokens_data_rows <- nrow(tokens_data)
 ```
@@ -142,7 +143,9 @@ review_data %>%
   mutate(stars = factor(overall)) %>% 
   ggplot(aes(x = review_words, fill = stars, group = stars)) +
   geom_density(aes(y = ..density..), alpha = 0.4) +
-  scale_x_log10(limits = c(1, 10000)) 
+  scale_x_log10(limits = c(1, 10000)) +
+  ylab("density") +
+  xlab("# words per review")
 
 ```
 
@@ -153,7 +156,9 @@ review_data %>%
   mutate(helpful_positive_1 = factor(helpful_positive_1)) %>% 
   ggplot(aes(x = review_words, fill = helpful_positive_1, group = helpful_positive_1)) +
   geom_density(aes(y = ..density..), alpha = 0.4) +
-  scale_x_log10(limits = c(1, 10000))
+  scale_x_log10(limits = c(1, 10000)) +
+  ylab("density") +
+  xlab("# words per review")
 ```
 
 ### Helpfulness negative
@@ -163,7 +168,9 @@ review_data %>%
   mutate(helpful_negative_1 = factor(helpful_negative_1)) %>% 
   ggplot(aes(x = review_words, fill = helpful_negative_1, group = helpful_negative_1)) +
   geom_density(aes(y = ..density..), alpha = 0.4) +
-  scale_x_log10(limits = c(1, 10000))
+  scale_x_log10(limits = c(1, 10000)) +
+  ylab("density") +
+  xlab("# words per review")
 ```
 
 ## Review time order {.tabset .tabset-fade .tabset-pills}
@@ -182,7 +189,9 @@ review_data %>%
          relative_review_time = (time_order_per_asin-1/2)/n_rev_per_asin) %>% 
   ggplot(aes(x = relative_review_time, fill = stars)) +
   geom_bar(position="fill", stat="bin", bins = 50) +
-  scale_y_continuous(labels = scales::percent)
+  scale_y_continuous(labels = scales::percent) +
+  ylab("share") +
+  xlab("relative review time")
 ```
 
 
@@ -195,7 +204,9 @@ review_data %>%
   ggplot(aes(x = relative_review_time, fill = helpful_positive_1)) +
   geom_bar(position="fill",  stat="bin", bins = 50) +
   scale_y_continuous(labels = scales::percent) +
-  coord_cartesian(ylim = c(0, 0.5))
+  coord_cartesian(ylim = c(0, 0.5)) +
+  ylab("share") +
+  xlab("relative review time")
 ```
 
 ### Negative helpful
@@ -207,24 +218,52 @@ review_data %>%
   ggplot(aes(x = relative_review_time, fill = helpful_negative_1)) +
   geom_bar(position="fill",  stat="bin", bins = 50) +
   scale_y_continuous(labels = scales::percent) +
-  coord_cartesian(ylim = c(0, 0.03))
-
+  coord_cartesian(ylim = c(0, 0.08)) +
+  ylab("share") +
+  xlab("relative review time")
 ```
 
 
 
 ## Price {.tabset .tabset-fade .tabset-pills}
 
+The product prices distribution:
+
+```{r hist_price}
+product_data <-
+  review_data %>% 
+  group_by(asin) %>% 
+  summarise(price = first(price),
+            n_rev_per_asin = first(n_rev_per_asin),
+            stars = first(avg_overall_per_asin),
+            avg_helpful_positive_1 = mean(helpful_positive_1),
+            n_helpful_positive_1 = sum(helpful_positive_1))
+
+price_limits <- 
+  product_data %>% 
+  pull(price) %>% 
+  quantile(c(0.005, 0.995), na.rm = TRUE)
+
+product_data %>% 
+  ggplot() +
+  geom_histogram(aes(x = price), bins = 100, fill = "#2ab7ca") +
+  coord_cartesian(xlim = price_limits) +
+  ylab("# products") + 
+  xlab("product price")
+```
+
+
 ### Stars
 
 ```{r price_stars}
-limits_x <- c(1, 500)
-
 review_data %>% 
   mutate(stars = factor(overall)) %>% 
   ggplot(aes(x = price, fill = stars)) +
   geom_bar(position="fill",  stat="bin", bins = 50) +
-  scale_x_log10(limits = limits_x)
+  scale_x_log10(limits = price_limits) +
+  ylab("share") +
+  xlab("product price")
+  
 ```
 
 
@@ -235,7 +274,8 @@ review_data %>%
   mutate(helpful_positive_1 = factor(helpful_positive_1)) %>% 
   ggplot(aes(x = price, fill = helpful_positive_1)) +
   geom_bar(position="fill", stat="bin", bins = 50) +
-  scale_x_log10(limits = limits_x) +
+  scale_x_log10(limits = price_limits) +
+  scale_y_continuous(labels = scales::percent) +
   coord_cartesian(ylim = c(0, 0.5))
 ```
 
@@ -246,6 +286,49 @@ review_data %>%
   mutate(helpful_negative_1 = factor(helpful_negative_1)) %>% 
   ggplot(aes(x = price, fill = helpful_negative_1)) +
   geom_bar(position="fill",  stat="bin", bins = 50) +
-  scale_x_log10(limits = limits_x) +
-  coord_cartesian(ylim = c(0, 0.03))
+  scale_x_log10(limits = price_limits) +
+  scale_y_continuous(labels = scales::percent) +
+  coord_cartesian(ylim = c(0, 0.10)) +
+  ylab("share") +
+  xlab("product price")
 ```
+
+
+## Per products view {.tabset .tabset-fade .tabset-pills}
+
+###  Share of positive reviews vs number of reviews 
+
+```{r helpful_n_share}
+limits_n_rev <- product_data %>% 
+  pull(n_rev_per_asin) %>% 
+  quantile(c(0.0075, 0.9925))
+
+product_data %>% 
+  mutate(avg_stars = factor(round(stars, 0))) %>% 
+  ggplot(aes(x = n_rev_per_asin, y = n_helpful_positive_1,
+             group = avg_stars, color = avg_stars, fill = avg_stars)) +
+  geom_smooth(method = "loess", se = TRUE) +
+  scale_x_continuous(limits = limits_n_rev) +
+  #scale_x_log10(limits = limits_n_rev) +
+  xlab("# reviews per product") + 
+  ylab("# helpful reviews per product") + 
+  labs(fill = "Dose (mg)") +
+  guides(colour = FALSE)
+```
+
+
+###  Reviews per product on price
+
+Number of stars vs product price
+
+```{r n_rev_price}
+product_data %>% 
+  ggplot(aes(x = price, y = n_rev_per_asin)) +
+  geom_smooth(method = "loess", se = TRUE) +
+  scale_x_log10(limits = price_limits) +
+  expand_limits(y = 1) +
+  ylab("# reviews per product") +
+  xlab("product price")
+```
+
+
