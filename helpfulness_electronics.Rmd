@@ -1,5 +1,5 @@
 ---
-title: "Helpfulness Movies"
+title: "Helpfulness Electronics"
 author: "zdenek.vesely@gmail.com"
 date: "1/20/2020"
 output: html_document
@@ -21,9 +21,9 @@ library(lubridate)
 library(kableExtra)
 
 if (params$data_size == "small") {
-  review_data <- read_rds("prepared_data/reviews_enriched_movies_10000.Rds")
+  review_data <- read_rds("prepared_data/reviews_enriched_electronics_10000.Rds")
 } else {
-  review_data <- read_rds("prepared_data/reviews_enriched_movies_all.Rds")
+  review_data <- read_rds("prepared_data/reviews_enriched_electronics_all.Rds")
 }
 
 
